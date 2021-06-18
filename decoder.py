@@ -62,7 +62,10 @@ class RF15Decoder:
     def _pairwise(self, it):
         it = iter(it)
         while True:
-            yield next(it), next(it)
+            try:
+                yield next(it), next(it)
+            except StopIteration:
+                return
 
     def _printf(self, format, *args):
         sys.stdout.write(format % args)
