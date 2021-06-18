@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import bitstruct
 from bitstring import BitArray as ba
 
 PREAMBLE = 0x55
@@ -10,6 +11,8 @@ MANCH_ENC = [0xAA, 0xA9, 0xA6, 0xA5, 0x9A, 0x99, 0x96, 0x95,
              0x6A, 0x69, 0x66, 0x65, 0x5A, 0x59, 0x56, 0x55]
 HEADER_FLAGS = [0x0F, 0x0C, 0x0D, 0x0B, 0x27, 0x24, 0x25, 0x23,
                 0x47, 0x44, 0x45, 0x43, 0x17, 0x14, 0x15, 0x13]
+
+CMD_CO2_PPM = 0x1212
 
 class PacketException(Exception):
     """Base class for other exceptions"""
@@ -58,6 +61,9 @@ class RF15Decoder:
 
     def __init__(self):
         pass
+
+    def _hex_list_to_int(self, fmt, hexlist):
+        return bitstruct.unpack('fmt', bytearray(hexlist))
 
     def _pairwise(self, it):
         it = iter(it)
@@ -111,6 +117,9 @@ class RF15Decoder:
             packet = ba(bin=rawmessage)
 
         try:
+            # Save raw bitstream
+            self.raw_message = packet.bin
+
             # Sync on preamble
             counter = 0
             bit = packet[0]
@@ -128,8 +137,6 @@ class RF15Decoder:
 
             # Reverse bit order (Endianess is LSB)
             message = [byte[::-1] for byte in message]
-
-            self.raw_message = ''.join(x.bin for x in message)
 
             return message
         except Exception:
@@ -265,3 +272,9 @@ class RF15Decoder:
         message = self.extract_message(message)
         message = self.man_decode_message(message)
         self.parse_message(message)
+
+        try:
+            if self.cmd == CMD_CO2_PPM:
+                self._printf('CO2 PPM: %i\n', self._hex_list_to_int('u24', self.payload))
+        except Exception as e:
+            pass

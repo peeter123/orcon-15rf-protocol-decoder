@@ -14,7 +14,8 @@ decoder = rf15dec()
 for line in lines:
     try:
         decoder.decode(line)
-    except Exception:
+    except Exception as e:
+        print('Invalid Packet %s' % type(e))
         continue
 
     pass
